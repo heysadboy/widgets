@@ -4,20 +4,19 @@ import axios from 'axios';
 const Search = () => {
 
     const [term, setTerm] = useState('programming');
-    const [results, setResults] = useState([]);
+    const [debouncedTerm, setDebouncedTerm] = useState(term);
+    const [result, setResults] = useState([]);
 
-    const renderedResults = results.map((results) => {
-        return (
-            <div key={results.pageid} className='item'>
-                <div className='content'>
-                    <div className='header'>
-                        {results.title}
-                    </div>
-                    <span dangerouslySetInnerHTML={{__html: results.snippet}}></span>
-                </div>
-            </div>
-        );
-    });
+    useEffect(() => {
+        const timerId = setTimeout(() => {
+            setDebouncedTerm(term);
+        }, 1000);
+
+        return () => {
+            clearTimeout(timerId);
+        }
+
+    }, [term]);
 
     useEffect(() => {
         const search = async () => {
@@ -27,16 +26,40 @@ const Search = () => {
                     list: 'search',
                     origin: '*',
                     format: 'json',
-                    srsearch: term,
+                    srsearch: debouncedTerm,
                 },
             });
 
             setResults(data.query.search);
         };
 
-        search();
+        if (debouncedTerm) {
+            search();
+        }
 
-    }, [term]);
+    }, [debouncedTerm]);
+
+    const renderedResults = result.map((result) => {
+        var snippet = result.snippet.replace(/<(.|\n)*?>/g, '');
+        return (
+            <div key={result.pageid} className='item'>
+                <div className='right floated content'>
+                    <a
+                        className='ui button'
+                        href={`https://en.wikipedia.org?curid=${result.pageid}`}
+                    >
+                        Go
+                        </a>
+                </div>
+                <div className='content'>
+                    <div className='header'>
+                        {result.title}
+                    </div>
+                    {snippet}
+                </div>
+            </div>
+        );
+    });
 
     return (
         <div>
@@ -49,7 +72,7 @@ const Search = () => {
                         className="input" />
                 </div>
             </div>
-            <div className='ui celled list'>{renderedResults}z</div>
+            <div className='ui celled list'>{renderedResults}</div>
         </div>
     );
 };
